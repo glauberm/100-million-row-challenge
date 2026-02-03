@@ -65,6 +65,7 @@ jobs:
 
             git fetch --prune origin \"refs/pull/${PR_NUMBER}/head:${BRANCH}\"
             git switch \"${BRANCH}\" || git checkout \"${BRANCH}\"
+          '"
 
       - name: Run benchmark
         run: |
