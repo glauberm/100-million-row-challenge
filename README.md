@@ -135,3 +135,7 @@ While testing this challenge, the JIT didn't seem to offer any significant perfo
 #### Can I use FFI?
 
 The point of this challenge is to push PHP to its limits. That's why you're not allowed to use FFI.
+
+#### How long should I wait for benchmark results to come in?
+
+We manually verify each submission before running it on the benchmark sever. Depending on our availability, this means possible waiting times. If we haven't gotten to your submission within 24 hours, feel free to ping @brendt or @xHeaven in a comment to make sure we don't forget you.
