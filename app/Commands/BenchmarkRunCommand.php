@@ -293,7 +293,8 @@ final class BenchmarkRunCommand
         );
 
         $command = sprintf(
-            "hyperfine --warmup 2 --runs 5 --export-json %s 'cd %s && %s'",
+            "hyperfine --warmup 0 --runs 1 --export-json %s 'cd %s && %s'",
+//            "hyperfine --warmup 2 --runs 5 --export-json %s 'cd %s && %s'",
             escapeshellarg($resultFile),
             escapeshellarg($benchmarkDir),
             $parseCommand,
