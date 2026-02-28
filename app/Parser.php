@@ -16,8 +16,7 @@ final class Parser
     {
         \gc_disable();
 
-        $fileSize = \filesize($inputPath);
-
+        $fileSize   = \filesize($inputPath);
         $dateIds    = [];
         $dateLabels = [];
         $numDates   = 0;
@@ -34,7 +33,7 @@ final class Parser
                 $datePrefix = "{$year}-{$monthStr}-";
 
                 for ($day = 1; $day <= $daysInMonth; $day++) {
-                    $key = $datePrefix . ($day < 10 ? "0{$day}" : (string) $day);
+                    $key                   = $datePrefix . ($day < 10 ? "0{$day}" : (string) $day);
                     $dateIds[$key]         = $numDates;
                     $dateLabels[$numDates] = $key;
                     $numDates++;
@@ -47,7 +46,7 @@ final class Parser
         $sample = \fread($fileHandle, \min($fileSize, self::PROBE_SIZE));
         \fclose($fileHandle);
 
-        $slugIndex  = [];
+        $slugBase   = [];
         $slugLabels = [];
         $numSlugs   = 0;
         $bound      = \strrpos($sample, "\n");
@@ -61,8 +60,8 @@ final class Parser
 
             $slug = \substr($sample, $pos + 25, $newlinePos - $pos - 51);
 
-            if (!isset($slugIndex[$slug])) {
-                $slugIndex[$slug]      = $numSlugs;
+            if (!isset($slugBase[$slug])) {
+                $slugBase[$slug]       = $numSlugs * $numDates;
                 $slugLabels[$numSlugs] = $slug;
                 $numSlugs++;
             }
@@ -75,18 +74,17 @@ final class Parser
         foreach (Visit::all() as $visit) {
             $slug = \substr($visit->uri, 25);
 
-            if (!isset($slugIndex[$slug])) {
-                $slugIndex[$slug]      = $numSlugs;
+            if (!isset($slugBase[$slug])) {
+                $slugBase[$slug]       = $numSlugs * $numDates;
                 $slugLabels[$numSlugs] = $slug;
                 $numSlugs++;
             }
         }
 
-        $counts = \array_fill(0, $numSlugs * $numDates, 0);
-
+        $counts     = \array_fill(0, $numSlugs * $numDates, 0);
         $fileHandle = \fopen($inputPath, 'rb');
         \stream_set_read_buffer($fileHandle, 0);
-        $remaining = $fileSize;
+        $remaining  = $fileSize;
 
         while ($remaining > 0) {
             $chunk       = \fread($fileHandle, $remaining > self::CHUNK_SIZE ? self::CHUNK_SIZE : $remaining);
@@ -111,39 +109,39 @@ final class Parser
             }
 
             $pos  = 25;
-            $safe = $lastNl - 480;
+            $safe = $lastNl - 600;
 
             while ($pos < $safe) {
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
 
                 $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
             }
 
@@ -154,7 +152,7 @@ final class Parser
                     break;
                 }
 
-                $counts[$slugIndex[\substr($chunk, $pos, $sep - $pos)] * $numDates + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
                 $pos = $sep + 52;
             }
         }
@@ -162,6 +160,7 @@ final class Parser
         \fclose($fileHandle);
 
         $outputHandle = \fopen($outputPath, 'wb');
+
         \stream_set_write_buffer($outputHandle, self::WRITE_BUF);
 
         $datePfx = [];
