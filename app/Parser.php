@@ -15,6 +15,7 @@ final class Parser
     public function parse(string $inputPath, string $outputPath): void
     {
         \gc_disable();
+
         $fileSize = \filesize($inputPath);
 
         $dateChars  = [];
@@ -49,7 +50,8 @@ final class Parser
         $slugIndex  = [];
         $slugLabels = [];
         $numSlugs   = 0;
-        $bound      = \strrpos($sample, "\n");
+
+        $bound = \strrpos($sample, "\n");
 
         for ($pos = 0; $pos < $bound;) {
             $newlinePos = \strpos($sample, "\n", $pos + 52);
@@ -109,47 +111,73 @@ final class Parser
                 $remaining += $over;
             }
 
-            $pos  = 0;
-            $safe = $lastNl - 320;
+            $pos = 25;
+
+            $safe = $lastNl - 480;
+
             while ($pos < $safe) {
-                $newlinePos = \strpos($chunk, "\n", $pos + 52);
-                $bins[$slugIndex[\substr($chunk, $pos + 25, $newlinePos - $pos - 51)]] .= $dateChars[\substr($chunk, $newlinePos - 23, 8)];
-                $pos = $newlinePos + 1;
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
 
-                $newlinePos = \strpos($chunk, "\n", $pos + 52);
-                $bins[$slugIndex[\substr($chunk, $pos + 25, $newlinePos - $pos - 51)]] .= $dateChars[\substr($chunk, $newlinePos - 23, 8)];
-                $pos = $newlinePos + 1;
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
 
-                $newlinePos = \strpos($chunk, "\n", $pos + 52);
-                $bins[$slugIndex[\substr($chunk, $pos + 25, $newlinePos - $pos - 51)]] .= $dateChars[\substr($chunk, $newlinePos - 23, 8)];
-                $pos = $newlinePos + 1;
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
 
-                $newlinePos = \strpos($chunk, "\n", $pos + 52);
-                $bins[$slugIndex[\substr($chunk, $pos + 25, $newlinePos - $pos - 51)]] .= $dateChars[\substr($chunk, $newlinePos - 23, 8)];
-                $pos = $newlinePos + 1;
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
+
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
+
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
+
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
+
+                $sep = \strpos($chunk, ',', $pos);
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+                $pos = $sep + 52;
             }
 
             while ($pos < $lastNl) {
-                $newlinePos = \strpos($chunk, "\n", $pos + 52);
-                if ($newlinePos === false) break;
-                $bins[$slugIndex[\substr($chunk, $pos + 25, $newlinePos - $pos - 51)]] .= $dateChars[\substr($chunk, $newlinePos - 23, 8)];
-                $pos = $newlinePos + 1;
+                $sep = \strpos($chunk, ',', $pos);
+
+                if ($sep === false || $sep >= $lastNl) {
+                    break;
+                }
+
+                $bins[$slugIndex[\substr($chunk, $pos, $sep - $pos)]] .= $dateChars[\substr($chunk, $sep + 3, 8)];
+
+                $pos = $sep + 52;
             }
         }
 
         \fclose($fileHandle);
 
         $grid = \array_fill(0, $numSlugs * $numDates, 0);
+
         for ($slugId = 0; $slugId < $numSlugs; $slugId++) {
             if ($bins[$slugId] === '') {
                 continue;
             }
 
             $base = $slugId * $numDates;
+
             foreach (\array_count_values(\unpack('v*', $bins[$slugId])) as $dateId => $count) {
                 $grid[$base + $dateId] = $count;
             }
         }
+
         unset($bins);
 
         $outputHandle = \fopen($outputPath, 'wb');
@@ -162,7 +190,7 @@ final class Parser
 
         $slugHdr = [];
         for ($slugId = 0; $slugId < $numSlugs; $slugId++) {
-            $slugHdr[$slugId] = '"\\/blog\\/' . \str_replace('/', '\\/', $slugLabels[$slugId]) . '"';
+            $slugHdr[$slugId] = '"\/blog\/' . \str_replace('/', '\/', $slugLabels[$slugId]) . '"';
         }
 
         \fwrite($outputHandle, '{');
