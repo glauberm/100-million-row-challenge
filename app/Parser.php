@@ -21,7 +21,7 @@ final class Parser
         $dateLabels = [];
         $numDates   = 0;
 
-        for ($year = 20; $year <= 26; $year++) {
+        for ($year = 21; $year <= 26; $year++) {
             for ($month = 1; $month <= 12; $month++) {
                 $daysInMonth = match ($month) {
                     2           => ($year % 4 === 0) ? 29 : 28,
