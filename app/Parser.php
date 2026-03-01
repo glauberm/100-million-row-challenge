@@ -8,7 +8,7 @@ use App\Commands\Visit;
 
 final class Parser
 {
-    private const int CHUNK_SIZE = 536_870_912;
+    private const int CHUNK_SIZE = 262_144;
     private const int PROBE_SIZE = 2_097_152;
     private const int WRITE_BUF  = 1_048_576;
 
@@ -21,7 +21,7 @@ final class Parser
         $dateLabels = [];
         $numDates   = 0;
 
-        for ($year = 20; $year <= 26; $year++) {
+        for ($year = 21; $year <= 26; $year++) {
             for ($month = 1; $month <= 12; $month++) {
                 $daysInMonth = match ($month) {
                     2           => ($year % 4 === 0) ? 29 : 28,
