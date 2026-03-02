@@ -9,7 +9,7 @@ if (($argv[1] ?? null) === "data:parse") {
     $inputPath = \substr($argv[2] ?? "", 13);
     $outputPath = \substr($argv[3] ?? "", 14);
     \App\Parser::parse($inputPath, $outputPath);
-    return;
+    exit(0);
 }
 
 use Tempest\Console\ConsoleApplication;
