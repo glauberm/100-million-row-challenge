@@ -8,7 +8,7 @@ use App\Commands\Visit;
 
 final class Parser
 {
-    private const int CHUNK_SIZE = 262_144;
+    private const int CHUNK_SIZE = 1_048_576;
     private const int PROBE_SIZE = 2_097_152;
     private const int WRITE_BUF  = 1_048_576;
 
