@@ -8,9 +8,8 @@ use App\Commands\Visit;
 
 final class Parser
 {
-    private const int CHUNK_SIZE = 1_048_576;
-    private const int PROBE_SIZE = 2_097_152;
-    private const int WRITE_BUF  = 1_048_576;
+    private const int CHUNK_SIZE = 524_288;
+    private const int WRITE_BUF  = 4_194_304;
 
     public static function parse(string $inputPath, string $outputPath): void
     {
@@ -41,48 +40,13 @@ final class Parser
             }
         }
 
-        $numExpected = \count(Visit::SLUGS);
-
-        $fileHandle = \fopen($inputPath, 'rb');
-        \stream_set_read_buffer($fileHandle, 0);
-        $sample = \fread($fileHandle, \min($fileSize, self::PROBE_SIZE));
-        \fclose($fileHandle);
-
         $slugBase   = [];
         $slugLabels = [];
         $numSlugs   = 0;
-        $bound      = \strrpos($sample, "\n");
-
-        for ($pos = 0; $pos < $bound;) {
-            $newlinePos = \strpos($sample, "\n", $pos + 52);
-
-            if ($newlinePos === false) {
-                break;
-            }
-
-            $slug = \substr($sample, $pos + 25, $newlinePos - $pos - 51);
-
-            if (!isset($slugBase[$slug])) {
-                $slugBase[$slug]       = $numSlugs * $numDates;
-                $slugLabels[$numSlugs] = $slug;
-                $numSlugs++;
-
-                if ($numSlugs === $numExpected) {
-                    break;
-                }
-            }
-
-            $pos = $newlinePos + 1;
-        }
-
-        unset($sample);
-
         foreach (Visit::SLUGS as $slug) {
-            if (!isset($slugBase[$slug])) {
-                $slugBase[$slug]       = $numSlugs * $numDates;
-                $slugLabels[$numSlugs] = $slug;
-                $numSlugs++;
-            }
+            $slugBase[$slug]       = $numSlugs * $numDates;
+            $slugLabels[$numSlugs] = $slug;
+            $numSlugs++;
         }
 
         $counts     = \array_fill(0, $numSlugs * $numDates, 0);
@@ -164,7 +128,6 @@ final class Parser
         \fclose($fileHandle);
 
         $outputHandle = \fopen($outputPath, 'wb');
-
         \stream_set_write_buffer($outputHandle, self::WRITE_BUF);
 
         $datePfx  = [];
