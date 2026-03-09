@@ -30,7 +30,7 @@ final class Parser
                 };
 
                 $monthStr   = $month < 10 ? "0{$month}" : (string) $month;
-                $datePrefix = "{$year}-{$monthStr}-";
+                $datePrefix = ($year % 10) . "-{$monthStr}-";
 
                 for ($day = 1; $day <= $daysInMonth; $day++) {
                     $key                   = $datePrefix . ($day < 10 ? "0{$day}" : (string) $day);
@@ -116,47 +116,47 @@ final class Parser
             $safe = $lastNl - 600;
 
             while ($pos < $safe) {
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
 
-                $sep = \strpos($chunk, ',', $pos);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $sep = \strpos($chunk, ',', $pos + 4);
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
             }
 
             while ($pos < $lastNl) {
-                $sep = \strpos($chunk, ',', $pos);
+                $sep = \strpos($chunk, ',', $pos + 4);
 
                 if ($sep === false || $sep >= $lastNl) {
                     break;
                 }
 
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 3, 8)]]++;
+                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
             }
         }
@@ -170,7 +170,7 @@ final class Parser
         $datePfx  = [];
         $datePfxC = [];
         for ($dateId = 0; $dateId < $numDates; $dateId++) {
-            $entry             = '        "20' . $dateLabels[$dateId] . '": ';
+            $entry             = '        "202' . $dateLabels[$dateId] . '": ';
             $datePfx[$dateId]  = $entry;
             $datePfxC[$dateId] = ",\n" . $entry;
         }
