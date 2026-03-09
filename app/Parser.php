@@ -41,6 +41,8 @@ final class Parser
             }
         }
 
+        $numExpected = \count(Visit::SLUGS);
+
         $fileHandle = \fopen($inputPath, 'rb');
         \stream_set_read_buffer($fileHandle, 0);
         $sample = \fread($fileHandle, \min($fileSize, self::PROBE_SIZE));
@@ -64,6 +66,10 @@ final class Parser
                 $slugBase[$slug]       = $numSlugs * $numDates;
                 $slugLabels[$numSlugs] = $slug;
                 $numSlugs++;
+
+                if ($numSlugs === $numExpected) {
+                    break;
+                }
             }
 
             $pos = $newlinePos + 1;
@@ -71,9 +77,7 @@ final class Parser
 
         unset($sample);
 
-        foreach (Visit::all() as $visit) {
-            $slug = \substr($visit->uri, 25);
-
+        foreach (Visit::SLUGS as $slug) {
             if (!isset($slugBase[$slug])) {
                 $slugBase[$slug]       = $numSlugs * $numDates;
                 $slugLabels[$numSlugs] = $slug;
@@ -163,9 +167,12 @@ final class Parser
 
         \stream_set_write_buffer($outputHandle, self::WRITE_BUF);
 
-        $datePfx = [];
+        $datePfx  = [];
+        $datePfxC = [];
         for ($dateId = 0; $dateId < $numDates; $dateId++) {
-            $datePfx[$dateId] = '        "20' . $dateLabels[$dateId] . '": ';
+            $entry             = '        "20' . $dateLabels[$dateId] . '": ';
+            $datePfx[$dateId]  = $entry;
+            $datePfxC[$dateId] = ",\n" . $entry;
         }
 
         $slugHdr = [];
@@ -177,9 +184,9 @@ final class Parser
         $first = true;
 
         for ($slugId = 0; $slugId < $numSlugs; $slugId++) {
-            $base      = $slugId * $numDates;
-            $body      = '';
-            $separator = '';
+            $base   = $slugId * $numDates;
+            $firstD = -1;
+            $body   = '';
 
             for ($dateId = 0; $dateId < $numDates; $dateId++) {
                 $count = $counts[$base + $dateId];
@@ -188,12 +195,23 @@ final class Parser
                     continue;
                 }
 
-                $body     .= $separator . $datePfx[$dateId] . $count;
-                $separator = ",\n";
+                $firstD = $dateId;
+                $body   = $datePfx[$dateId] . $count;
+                break;
             }
 
-            if ($body === '') {
+            if ($firstD === -1) {
                 continue;
+            }
+
+            for ($dateId = $firstD + 1; $dateId < $numDates; $dateId++) {
+                $count = $counts[$base + $dateId];
+
+                if ($count === 0) {
+                    continue;
+                }
+
+                $body .= $datePfxC[$dateId] . $count;
             }
 
             \fwrite($outputHandle, ($first ? '' : ',') . "\n    " . $slugHdr[$slugId] . ": {\n" . $body . "\n    }");
