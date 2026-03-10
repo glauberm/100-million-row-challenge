@@ -8,9 +8,6 @@ use App\Commands\Visit;
 
 final class Parser
 {
-    private const int CHUNK_SIZE = 524_288;
-    private const int WRITE_BUF  = 4_194_304;
-
     public static function parse(string $inputPath, string $outputPath): void
     {
         \gc_disable();
@@ -28,11 +25,11 @@ final class Parser
                     default     => 31,
                 };
 
-                $monthStr   = $month < 10 ? "0{$month}" : (string) $month;
-                $datePrefix = ($year % 10) . "-{$monthStr}-";
+                $monthStr   = $month < 10 ? '0' . $month : (string) $month;
+                $datePrefix = ($year % 10) . '-' . $monthStr . '-';
 
                 for ($day = 1; $day <= $daysInMonth; $day++) {
-                    $key                   = $datePrefix . ($day < 10 ? "0{$day}" : (string) $day);
+                    $key                   = $datePrefix . ($day < 10 ? '0' . $day : (string) $day);
                     $dateIds[$key]         = $numDates;
                     $dateLabels[$numDates] = $key;
                     $numDates++;
@@ -55,23 +52,12 @@ final class Parser
         $remaining  = $fileSize;
 
         while ($remaining > 0) {
-            $chunk       = \fread($fileHandle, $remaining > self::CHUNK_SIZE ? self::CHUNK_SIZE : $remaining);
+            $chunk       = \fread($fileHandle, $remaining > 524_288 ? 524_288 : $remaining);
             $chunkLength = \strlen($chunk);
+            $remaining  -= $chunkLength;
+            $lastNl      = \strrpos($chunk, "\n");
 
-            if ($chunkLength === 0) {
-                break;
-            }
-
-            $remaining -= $chunkLength;
-
-            $lastNl = \strrpos($chunk, "\n");
-
-            if ($lastNl === false) {
-                break;
-            }
-
-            $over = $chunkLength - $lastNl - 1;
-            if ($over > 0) {
+            if ($over = $chunkLength - $lastNl - 1) {
                 \fseek($fileHandle, -$over, \SEEK_CUR);
                 $remaining += $over;
             }
@@ -128,7 +114,7 @@ final class Parser
         \fclose($fileHandle);
 
         $outputHandle = \fopen($outputPath, 'wb');
-        \stream_set_write_buffer($outputHandle, self::WRITE_BUF);
+        \stream_set_write_buffer($outputHandle, 4_194_304);
 
         $datePfx  = [];
         $datePfxC = [];
@@ -138,9 +124,9 @@ final class Parser
             $datePfxC[$dateId] = ",\n" . $entry;
         }
 
-        $slugHdr = [];
+        $slugOpen = [];
         for ($slugId = 0; $slugId < $numSlugs; $slugId++) {
-            $slugHdr[$slugId] = '"\/blog\/' . \str_replace('/', '\/', $slugLabels[$slugId]) . '"';
+            $slugOpen[$slugId] = "\n    \"\/blog\/" . \str_replace('/', '\/', $slugLabels[$slugId]) . "\": {\n";
         }
 
         \fwrite($outputHandle, '{');
@@ -177,7 +163,7 @@ final class Parser
                 $body .= $datePfxC[$dateId] . $count;
             }
 
-            \fwrite($outputHandle, ($first ? '' : ',') . "\n    " . $slugHdr[$slugId] . ": {\n" . $body . "\n    }");
+            \fwrite($outputHandle, ($first ? '' : ',') . $slugOpen[$slugId] . $body . "\n    }");
             $first = false;
         }
 
