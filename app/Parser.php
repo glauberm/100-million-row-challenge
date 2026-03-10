@@ -323,17 +323,20 @@ final class Parser
         $probeNl    = \strrpos($probeChunk, "\n");
         $slugSeen   = \array_fill(0, $numSlugs, false);
         $slugOrder  = [];
+        $probeFound = 0;
         if ($probeNl !== false) {
             $ppos = 25;
             while ($ppos < $probeNl) {
                 $psep = \strpos($probeChunk, ',', $ppos + 4);
-                if ($psep === false || $psep > $probeNl) break;
-                $pslug = \substr($probeChunk, $ppos, $psep - $ppos);
-                if (isset($slugIds[$pslug])) {
-                    $pid = $slugIds[$pslug];
-                    if (!$slugSeen[$pid]) {
-                        $slugOrder[]     = $pid;
-                        $slugSeen[$pid]  = true;
+                if ($psep === false || $psep > $probeNl) {
+                    break;
+                }
+                $pid = $slugIds[\substr($probeChunk, $ppos, $psep - $ppos)];
+                if (!$slugSeen[$pid]) {
+                    $slugOrder[]    = $pid;
+                    $slugSeen[$pid] = true;
+                    if (++$probeFound === $numSlugs) {
+                        break;
                     }
                 }
                 $ppos = $psep + 52;
