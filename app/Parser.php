@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App;
 
 use App\Commands\Visit;
 
 final class Parser
 {
-    public static function parse(string $inputPath, string $outputPath): void
+    public static function parse($inputPath, $outputPath): void
     {
         \gc_disable();
 
@@ -141,34 +139,17 @@ final class Parser
         $first = true;
 
         for ($slugId = 0; $slugId < $numSlugs; $slugId++) {
-            $base   = $slugId * $numDates;
-            $firstD = -1;
-            $body   = '';
+            $base = $slugId * $numDates;
+            $body = '';
 
             for ($dateId = 0; $dateId < $numDates; $dateId++) {
-                $count = $counts[$base + $dateId];
-
-                if ($count === 0) {
-                    continue;
+                if ($count = $counts[$base + $dateId]) {
+                    $body .= ($body !== '' ? $datePfxC[$dateId] : $datePfx[$dateId]) . $count;
                 }
-
-                $firstD = $dateId;
-                $body   = $datePfx[$dateId] . $count;
-                break;
             }
 
-            if ($firstD === -1) {
+            if ($body === '') {
                 continue;
-            }
-
-            for ($dateId = $firstD + 1; $dateId < $numDates; $dateId++) {
-                $count = $counts[$base + $dateId];
-
-                if ($count === 0) {
-                    continue;
-                }
-
-                $body .= $datePfxC[$dateId] . $count;
             }
 
             \fwrite($outputHandle, ($first ? '' : ',') . $slugOpen[$slugId] . $body . "\n    }");
