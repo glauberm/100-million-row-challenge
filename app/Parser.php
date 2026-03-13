@@ -293,7 +293,7 @@ final class Parser
                 };
 
                 $monthStr   = $month < 10 ? '0' . $month : (string) $month;
-                $datePrefix = ($year % 10) . '-' . $monthStr . '-';
+                $datePrefix = $year . '-' . $monthStr . '-';
 
                 for ($day = 1; $day <= $daysInMonth; $day++) {
                     $key                   = $datePrefix . ($day < 10 ? '0' . $day : (string) $day);
@@ -306,7 +306,7 @@ final class Parser
 
         $probeHandle = \fopen($inputPath, 'rb');
         \stream_set_read_buffer($probeHandle, 0);
-        $sample      = \fread($probeHandle, \min($fileSize, 2_097_152));
+        $sample      = \fread($probeHandle, \min($fileSize, 262_144));
         \fclose($probeHandle);
 
         $slugBase    = [];
@@ -347,69 +347,105 @@ final class Parser
             }
         }
 
+        $urlPfx = 'https://stitcher.io/blog/';
+        $sufLen = 1;
+        while (true) {
+            $seen = [];
+            $ok   = true;
+            for ($s = 0; $s < $numSlugs; $s++) {
+                $k = \substr($urlPfx . $slugLabels[$s], -$sufLen);
+                if (isset($seen[$k])) {
+                    $ok = false;
+                    break;
+                }
+                $seen[$k] = true;
+            }
+            if ($ok) break;
+            $sufLen++;
+        }
+        unset($seen);
+
+        $SHIFT   = 20;
+        $MASK    = (1 << $SHIFT) - 1;
+        $slugMap = [];
+        $maxLine = 0;
+        for ($s = 0; $s < $numSlugs; $s++) {
+            $lineLen = \strlen($slugLabels[$s]) + 52;
+            if ($lineLen > $maxLine) $maxLine = $lineLen;
+            $slugMap[\substr($urlPfx . $slugLabels[$s], -$sufLen)] = ($lineLen << $SHIFT) | ($s * $numDates);
+        }
+
+        $sufOff = 26 + $sufLen;
+        $fence  = $maxLine * 10 + $sufOff;
+
         $counts     = \array_fill(0, $numSlugs * $numDates, 0);
         $fileHandle = \fopen($inputPath, 'rb');
         \stream_set_read_buffer($fileHandle, 0);
-
-        $remaining = $fileSize;
+        \fseek($fileHandle, 0);
+        $remaining  = $fileSize;
 
         while ($remaining > 0) {
-            $chunk       = \fread($fileHandle, $remaining > 524_288 ? 524_288 : $remaining);
-            $chunkLength = \strlen($chunk);
-            $remaining  -= $chunkLength;
-            $lastNl      = \strrpos($chunk, "\n");
+            $toRead = $remaining > 2_097_152 ? 2_097_152 : $remaining;
+            $chunk  = \fread($fileHandle, $toRead);
+            $length = \strlen($chunk);
+            $remaining -= $length;
 
-            if ($over = $chunkLength - $lastNl - 1) {
+            $lastNl = \strrpos($chunk, "\n");
+            if ($lastNl === false) break;
+
+            if ($over = $length - $lastNl - 1) {
                 \fseek($fileHandle, -$over, \SEEK_CUR);
                 $remaining += $over;
             }
 
-            $pos  = 25;
-            $safe = $lastNl - 800;
+            $i = $lastNl;
 
-            while ($pos < $safe) {
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+            while ($i > $fence) {
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
 
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
+
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
+
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
             }
 
-            while ($pos < $lastNl) {
-                $sep = \strpos($chunk, ',', $pos + 4);
-
-                if ($sep === false || $sep >= $lastNl) {
-                    break;
-                }
-
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
+            while ($i >= $sufOff) {
+                $v = $slugMap[\substr($chunk, $i - $sufOff, $sufLen)];
+                $counts[($v & $MASK) + $dateIds[\substr($chunk, $i - 23, 8)]]++;
+                $i -= $v >> $SHIFT;
             }
         }
 
@@ -421,7 +457,7 @@ final class Parser
         $datePfx  = [];
         $datePfxC = [];
         for ($dateId = 0; $dateId < $numDates; $dateId++) {
-            $entry             = '        "202' . $dateLabels[$dateId] . '": ';
+            $entry             = '        "20' . $dateLabels[$dateId] . '": ';
             $datePfx[$dateId]  = $entry;
             $datePfxC[$dateId] = ",\n" . $entry;
         }
