@@ -365,17 +365,9 @@ final class Parser
             }
 
             $pos  = 25;
-            $safe = $lastNl - 1000;
+            $safe = $lastNl - 800;
 
             while ($pos < $safe) {
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
-
-                $sep = \strpos($chunk, ',', $pos + 4);
-                $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
-                $pos = $sep + 52;
-
                 $sep = \strpos($chunk, ',', $pos + 4);
                 $counts[$slugBase[\substr($chunk, $pos, $sep - $pos)] + $dateIds[\substr($chunk, $sep + 4, 7)]]++;
                 $pos = $sep + 52;
