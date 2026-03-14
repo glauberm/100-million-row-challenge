@@ -382,7 +382,7 @@ final class Parser
         $remaining = $fileSize;
 
         while ($remaining > 0) {
-            $toRead = $remaining > 524_288 ? 524_288 : $remaining;
+            $toRead = $remaining > 1_048_576 ? 1_048_576 : $remaining;
             $chunk  = \fread($fileHandle, $toRead);
             $length = \strlen($chunk);
             $remaining -= $length;
